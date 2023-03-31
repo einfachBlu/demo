@@ -1,0 +1,7 @@
+name: DemoPlugin
+main: de.blu.bukkit.DemoPlugin
+api-version: 1.19
+version: @VERSION@
+author: Blu
+commands:
+  features:
