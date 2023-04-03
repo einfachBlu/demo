@@ -27,6 +27,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.CookingRecipe;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
@@ -89,12 +90,9 @@ public final class ContainerInsertListener implements Listener {
         .filter(x -> x instanceof EndRodComponent)
         .map(pipeComponent -> (EndRodComponent) pipeComponent).toList();
 
-    System.out.println(endRodComponents.size());
-
     SenderChip senderChip = null;
     for (EndRodComponent endRodComponent : endRodComponents) {
       if (!endRodComponent.getChip().getType().equals(ChipType.SENDER)) {
-        System.out.println(endRodComponent.getChip().getType());
         continue;
       }
 
@@ -123,32 +121,51 @@ public final class ContainerInsertListener implements Listener {
       return true;
     }).map(pipeComponent -> (EndRodComponent) pipeComponent).toList();
 
-    EndRodComponent receiverEndRodComponent = receiverEndRodComponents.stream()
-        // Optional .filter() and .sorted() here to sort for priority and filter items individually
-        .findFirst().orElse(null);
-
-    if (receiverEndRodComponent == null) {
-      // Nothing found
-      return;
-    }
-
-    // Move
     List<ItemStack> itemStacks = new ArrayList<>();
     for (int i = 0; i < inventory.getSize(); i++) {
       ItemStack itemStack = inventory.getItem(i);
-      if (itemStack == null || itemStack.getType().equals(Material.AIR)) {
-        continue;
-      }
-
       itemStacks.add(itemStack);
     }
 
-    ContainerComponent targetContainer = (ContainerComponent) receiverEndRodComponent.getNearbyContainer();
-    inventory.clear();
-    targetContainer.getInventory().addItem(itemStacks.toArray(new ItemStack[0]));
+    for (EndRodComponent receiverEndRodComponent : receiverEndRodComponents) {
+      // Move
+      ContainerComponent targetContainer = (ContainerComponent) receiverEndRodComponent.getNearbyContainer();
+      slot = -1;
+      for (ItemStack itemStack : itemStacks) {
+        slot++;
+
+        if (itemStack == null || itemStack.getType().equals(Material.AIR)) {
+          continue;
+        }
+
+        int addedAmount = targetContainer.insertItem(itemStack.clone());
+
+        if (addedAmount == 0) {
+          // Nothing added
+          continue;
+        }
+
+        if (addedAmount == itemStack.getAmount()) {
+          // Stored the Item
+          itemStack.setType(Material.AIR);
+          inventory.setItem(slot, itemStack);
+          itemStacks.set(slot, itemStack);
+          continue;
+        }
+
+        // Return missing Items
+        itemStack.setAmount(itemStack.getAmount() - addedAmount);
+        inventory.setItem(slot, itemStack);
+        itemStacks.set(slot, itemStack);
+      }
+    }
   }
 
   @EventHandler
   public void onSmelt(FurnaceSmeltEvent e){
+    CookingRecipe<?> recipe = e.getRecipe();
+    Block block = e.getBlock();
+    ItemStack source = e.getSource();
+    ItemStack result = e.getResult();
   }
 }

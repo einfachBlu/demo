@@ -1,11 +1,13 @@
 package de.blu.bukkit.feature.pipe.model.component;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Chest;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 
 public final class ChestComponent extends PipeComponent implements ContainerComponent {
 
@@ -67,5 +69,51 @@ public final class ChestComponent extends PipeComponent implements ContainerComp
     Block block = this.getBlock();
     Chest chest = (Chest) block.getState();
     return chest.getInventory();
+  }
+
+  @Override
+  public int insertItem(ItemStack itemStack) {
+    int startAmount = itemStack.getAmount();
+    Inventory inventory = this.getInventory();
+
+    int emptySlot = -1;
+    for (int slot = 0; slot < inventory.getSize(); slot++) {
+      ItemStack targetItemStack = inventory.getItem(slot);
+
+      // Empty Slot
+      if (targetItemStack == null || targetItemStack.getType().equals(Material.AIR)) {
+        if (emptySlot == -1) {
+          emptySlot = slot;
+        }
+        continue;
+      }
+
+      // Check if they are the same except the amount
+      boolean same = targetItemStack.isSimilar(itemStack);
+      if (!same) {
+        continue;
+      }
+
+      // Fill existing Slot
+      int remainingAmount = targetItemStack.getMaxStackSize() - targetItemStack.getAmount();
+      if (remainingAmount > itemStack.getAmount()) {
+        targetItemStack.setAmount(targetItemStack.getAmount() + itemStack.getAmount());
+        inventory.setItem(slot, targetItemStack);
+        return startAmount;
+      }
+
+      // Fill Slot until it has reached the max stack
+      targetItemStack.setAmount(targetItemStack.getMaxStackSize());
+      itemStack.setAmount(itemStack.getAmount() - remainingAmount);
+      inventory.setItem(slot, targetItemStack);
+    }
+
+    // Put the remaining on the empty slot if some found
+    if (emptySlot != -1) {
+      inventory.setItem(emptySlot, itemStack);
+      return startAmount;
+    }
+
+    return startAmount - itemStack.getAmount();
   }
 }

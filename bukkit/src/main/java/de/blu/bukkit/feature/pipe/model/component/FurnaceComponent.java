@@ -4,6 +4,7 @@ import java.util.List;
 import org.bukkit.block.Block;
 import org.bukkit.block.Furnace;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 
 public final class FurnaceComponent extends PipeComponent implements ContainerComponent {
 
@@ -27,5 +28,10 @@ public final class FurnaceComponent extends PipeComponent implements ContainerCo
     Block block = this.getBlock();
     Furnace furnace = (Furnace) block.getState();
     return furnace.getInventory();
+  }
+
+  @Override
+  public int insertItem(ItemStack itemStack) {
+    throw new NullPointerException("Do not use ContainerComponent#insertItem() on Furnace. Use specific Methods instead.");
   }
 }
